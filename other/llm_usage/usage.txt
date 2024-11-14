@@ -1,0 +1,563 @@
+LLM: ChatGPT-4.
+Date: 14 November 2024
+
+
+Chenikas-Laptop:starter_folder-main-2 chenikabukes$ sqlite3 data/01-raw_data/hammer-2-processed.sqlite < scripts/01-clean_data.sql
+Parse error near line 13: no such column: raw.vendor
+   cleaned_data_lite AS SELECT     raw.nowtime,     raw.vendor,     raw.product_
+                                      error here ---^
+Parse error near line 34: no such table: cleaned_data_lite
+Parse error near line 42: no such table: cleaned_data_lite
+Parse error near line 59: no such table: final_cleaned_data_lite
+ChatGPT said:
+
+ChatGPT
+The error indicates that the vendor column is not available directly in the raw table within the hammer-2-processed.sqlite file. To debug, let’s simplify the script and focus on the available columns.
+
+Let’s first list the columns in each table directly in the script and then proceed to the join. Here’s an updated approach:
+
+-- Preamble 
+-- Purpose: Verify columns and create cleaned version of data
+-- Author: Chenika Bukes
+-- Date: 14 November 2024
+-- Contact: chenika.bukes@mail.utoronto.ca
+-- License: MIT
+-- Pre-requisites: raw and product tables should be present in the database
+
+-- Step 1: Check columns in raw and product tables
+PRAGMA table_info(raw);
+PRAGMA table_info(product);
+
+-- Step 2: Drop cleaned_data_lite table if it exists
+DROP TABLE IF EXISTS cleaned_data_lite;
+
+-- Step 3: Create cleaned_data_lite table by joining raw and product tables
+CREATE TABLE cleaned_data_lite AS
+SELECT
+    raw.nowtime,
+    product.vendor,          -- Ensures vendor comes from the product table
+    raw.product_id,
+    product.product_name,
+    product.brand,
+    raw.current_price,
+    raw.old_price,
+    product.units,
+    raw.price_per_unit,
+    raw.other
+FROM
+    raw
+JOIN
+    product ON raw.product_id = product.id
+WHERE
+    raw.current_price IS NOT NULL
+    AND product.product_name IS NOT NULL;
+
+-- Step 4: Clean price fields by removing commas if necessary
+UPDATE cleaned_data_lite
+SET 
+    current_price = REPLACE(current_price, ',', ''),
+    old_price = REPLACE(old_price, ',', ''),
+    price_per_unit = REPLACE(price_per_unit, ',', '');
+
+-- Step 5: Convert price fields to REAL type using CAST
+DROP TABLE IF EXISTS final_cleaned_data_lite;
+CREATE TABLE final_cleaned_data_lite AS
+SELECT
+    nowtime,
+    vendor,
+    product_id,
+    product_name,
+    brand,
+    CAST(current_price AS REAL) AS current_price,
+    CAST(old_price AS REAL) AS old_price,
+    units,
+    CAST(price_per_unit AS REAL) AS price_per_unit,
+    other
+FROM cleaned_data_lite;
+
+-- Step 6: Export to CSV
+.mode csv
+.output data/02-analysis_data/cleaned_hammer_data.csv
+SELECT * FROM final_cleaned_data_lite;
+.output stdout
+Instructions
+Run this script as follows to confirm the columns and create the cleaned data:
+sqlite3 data/01-raw_data/hammer-2-processed.sqlite < scripts/01-clean_data.sql
+Check the console output for the list of columns in each table.
+This approach will ensure we know exactly where each column is sourced, particularly focusing on vendor. If the vendor is only in product, this script will work accordingly.
+
+
+
+
+
+
+You said:
+Chenikas-Laptop:starter_folder-main-2 chenikabukes$ sqlite3 data/01-raw_data/hammer-2-processed.sqlite < scripts/01-clean_data.sql
+0|nowtime|TEXT|0||0
+1|current_price|TEXT|0||0
+2|old_price|TEXT|0||0
+3|price_per_unit|TEXT|0||0
+4|other|TEXT|0||0
+5|product_id|INTEGER|0||0
+0|id|INTEGER|0||1
+1|concatted|TEXT|0||0
+2|vendor|TEXT|0||0
+3|product_name|TEXT|0||0
+4|units|TEXT|0||0
+5|brand|TEXT|0||0
+6|detail_url|TEXT|0||0
+7|sku|TEXT|0||0
+8|upc|TEXT|0||0
+ChatGPT said:
+
+ChatGPT
+Thank you for providing the column details. Based on this, it looks like the raw table does not contain a vendor column directly; instead, vendor is present in the product table. Let's proceed with the join accordingly, ensuring vendor is taken from product.
+
+Here’s an updated 01-clean_data.sql script that accounts for this:
+
+-- Preamble 
+-- Purpose: Verify columns and create cleaned version of data
+-- Author: Chenika Bukes
+-- Date: 14 November 2024
+-- Contact: chenika.bukes@mail.utoronto.ca
+-- License: MIT
+-- Pre-requisites: raw and product tables should be present in the database
+
+-- Step 1: Drop cleaned_data_lite table if it exists
+DROP TABLE IF EXISTS cleaned_data_lite;
+
+-- Step 2: Create cleaned_data_lite table by joining raw and product tables
+CREATE TABLE cleaned_data_lite AS
+SELECT
+    raw.nowtime,
+    product.vendor,          -- Using vendor from the product table
+    raw.product_id,
+    product.product_name,
+    product.brand,
+    raw.current_price,
+    raw.old_price,
+    product.units,
+    raw.price_per_unit,
+    raw.other
+FROM
+    raw
+JOIN
+    product ON raw.product_id = product.id
+WHERE
+    raw.current_price IS NOT NULL
+    AND product.product_name IS NOT NULL;
+
+-- Step 3: Clean price fields by removing commas if necessary
+UPDATE cleaned_data_lite
+SET 
+    current_price = REPLACE(current_price, ',', ''),
+    old_price = REPLACE(old_price, ',', ''),
+    price_per_unit = REPLACE(price_per_unit, ',', '');
+
+-- Step 4: Convert price fields to REAL type using CAST
+DROP TABLE IF EXISTS final_cleaned_data_lite;
+CREATE TABLE final_cleaned_data_lite AS
+SELECT
+    nowtime,
+    vendor,
+    product_id,
+    product_name,
+    brand,
+    CAST(current_price AS REAL) AS current_price,
+    CAST(old_price AS REAL) AS old_price,
+    units,
+    CAST(price_per_unit AS REAL) AS price_per_unit,
+    other
+FROM cleaned_data_lite;
+
+-- Step 5: Export to CSV
+.mode csv
+.output data/02-analysis_data/cleaned_hammer_data.csv
+SELECT * FROM final_cleaned_data_lite;
+.output stdout
+Instructions
+Run the script in the SQLite environment:
+sqlite3 data/01-raw_data/hammer-2-processed.sqlite < scripts/01-clean_data.sql
+This should produce the joined and cleaned data in cleaned_hammer_data.csv with vendor sourced from the product table, as raw lacks that column. Let me know if this resolves the issues with the cleaned data output.
+
+
+
+
+
+
+You said:
+
+perfect so a non empty cleaned data was downloaded:
+Show in New Window
+New names:
+• ` -> ...5
+Rows: 11700216 Columns: 10
+── Column specification ────────────────────────────────────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (5): Voila, Anjou Pears Large 1 Count, ...5, ($0.99 per item), SALE
+dbl  (4): 1, 0.99, 1.29, 0.0
+dttm (1): 2024-06-22 10:35:00
+
+ℹ Use spec() to retrieve the full column specification for this data.
+ℹ Specify the column types or set show_col_types = FALSE to quiet this message.
+Error in filter():
+ℹ In argument: str_detect(product_name, "bread").
+Caused by error:
+! object 'product_name' not found
+Backtrace:
+  1. ... %>% ...
+ 12. stringr::str_detect(product_name, "bread")
+ 13. stringr:::check_lengths(string, pattern)
+ 14. vctrs::vec_size_common(...)
+Error in filter(., str_detect(product_name, "bread")) : 
+Caused by error:
+! object 'product_name' not found
+ChatGPT said:
+
+ChatGPT
+The error message you're seeing, object 'product_name' not found, suggests that the column names in your cleaned_hammer_data.csv file might not match what your R code is expecting. From the description, it seems that some column names might be improperly read or named differently than expected.
+
+To diagnose this, let's start by checking the actual column names of cleaned_hammer_data.csv in R. Run the following code to inspect the column names:
+
+# Load the data
+cleaned_data <- read_csv("data/02-analysis_data/cleaned_hammer_data.csv")
+
+# Display the column names
+colnames(cleaned_data)
+Once we have the exact column names, we can update the code to use the correct names.
+
+Please share the output of colnames(cleaned_data), and I can guide you on the next steps based on the actual column names.
+
+
+
+
+
+
+You said:
+> colnames(cleaned_data)
+ [1] "2024-06-22 10:35:00"       "Voila"                     "1"                        
+ [4] "Anjou Pears Large 1 Count" "...5"                      "0.99"                     
+ [7] "1.29"                      "($0.99 per item)"          "0.0"                      
+[10] "SALE"                     
+> 
+ChatGPT said:
+
+ChatGPT
+It appears that the column names were not read correctly, likely due to an issue with the CSV's formatting. The data was interpreted as if the first row of data were the column names, which is why you see values like "2024-06-22 10:35:00", "Voila", "1", etc., as column names instead of meaningful labels like nowtime, vendor, product_name, etc.
+
+To fix this, you can explicitly set the column names while loading the data. Based on the expected structure of your dataset, you could try:
+
+# Define the correct column names
+column_names <- c("nowtime", "vendor", "product_id", "product_name", "extra_column", 
+                  "current_price", "old_price", "price_per_unit", "other", "sale_status")
+
+# Load the data with specified column names
+cleaned_data <- read_csv("data/02-analysis_data/cleaned_hammer_data.csv", col_names = column_names)
+
+# Verify the data
+head(cleaned_data)
+In this code:
+
+extra_column is a placeholder for the column labeled ...5 in your screenshot. If you know the correct name, you can replace extra_column with it.
+Check the first few rows with head(cleaned_data) to ensure the data looks correct.
+After loading the data with the appropriate column names, you should be able to use product_name and other fields without issues.
+
+
+
+
+
+
+You said:
+
+ChatGPT said:
+
+ChatGPT
+It looks like your data and script have successfully generated a plot showing the "Average Price of Bread by Vendor." The plot provides a clear visualization of the average bread prices across various vendors, helping you analyze price variations in your dataset.
+
+If you want to proceed with further analysis, you could:
+
+Explore additional product categories, such as fruits, vegetables, or dairy products, and compare their average prices across vendors.
+Investigate price trends over time by adding a time component to your analysis, such as plotting average prices per month or week for each vendor.
+Examine the effect of sales by comparing "current_price" with "old_price" and analyzing how often each vendor has discounts.
+Let me know if you’d like guidance on extending the analysis in any of these directions or other ideas.
+
+
+
+
+
+
+You said:
+take one of those points for further investigation
+ChatGPT said:
+
+ChatGPT
+Let's extend the analysis by investigating price trends over time for a particular product category. We'll look at average bread prices over time across the different vendors to see if there are any noticeable trends, such as seasonal changes or price adjustments by specific vendors over the months.
+
+Here's a suggested approach:
+
+Steps:
+Filter the data for bread products across vendors.
+Aggregate the data to calculate the average price of bread for each vendor by month.
+Plot the trend over time to visually observe any patterns or fluctuations in bread prices.
+R Code:
+# Load necessary libraries
+library(tidyverse)
+library(lubridate)  # for date handling
+
+# Read in the cleaned data
+cleaned_data <- read_csv("data/02-analysis_data/cleaned_hammer_data.csv")
+
+# Filter for bread products and clean date column
+bread_data <- cleaned_data %>%
+  filter(str_detect(product_name, "bread", ignore_case = TRUE)) %>%
+  mutate(nowtime = ymd_hms(nowtime)) %>%
+  mutate(month = floor_date(nowtime, "month"))
+
+# Calculate the average price per vendor per month
+monthly_bread_prices <- bread_data %>%
+  group_by(vendor, month) %>%
+  summarize(avg_price = mean(current_price, na.rm = TRUE)) %>%
+  ungroup()
+
+# Plotting the monthly average price trends for bread by vendor
+ggplot(monthly_bread_prices, aes(x = month, y = avg_price, color = vendor)) +
+  geom_line(size = 1.2) +
+  labs(
+    title = "Monthly Average Price of Bread by Vendor",
+    x = "Month",
+    y = "Average Price (CAD)",
+    color = "Vendor"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+Explanation:
+Filtering: We select only bread products using str_detect() and format the nowtime column into date-time format.
+Aggregation: Using group_by(), we calculate the average bread price per vendor for each month.
+Plotting: The line plot (geom_line()) displays price trends over time, with each line representing a different vendor. This visual will allow us to identify patterns, such as gradual increases, seasonal dips, or alignment of price movements among vendors.
+Expected Outcome:
+This plot will help answer questions such as:
+
+Are there specific times of the year when bread prices tend to rise or fall?
+Do vendors adjust prices simultaneously, indicating possible market-wide trends?
+Is there a vendor with consistently lower or higher prices for bread over time?
+Let me know if you’d like further refinement or additional analyses based on this trend analysis!
+
+
+
+
+
+
+You said:
+add that to this file :
+---
+title: "Analysis of Grocery Price Dynamics"
+subtitle: "A Study of Pricing Strategies and Vendor Comparisons"
+author: 
+  - First author
+thanks: "Code and data are available at: https://github.com/chenikabukes/project_hammer."
+date: today
+date-format: long
+abstract: "This paper analyzes pricing data from various grocery vendors to uncover insights into pricing strategies, including average prices across vendors and changes in sale prices over time. We use SQL for data preparation and cleaning, with visualization and analysis conducted in R."
+format: pdf
+number-sections: true
+bibliography: references.bib
+---
+
+{r}
+#| include: false
+#| warning: false
+#| message: false
+
+
+library(tidyverse)
+library(DBI)
+library(RSQLite)
+library(here)
+library(modelsummary)
+library(rstanarm)
+
+
+
+# Introduction
+
+This study investigates grocery prices from various vendors, focusing on the frequency of price changes, comparisons across brands, and temporal trends. We analyze price dynamics using time-series data to answer questions about vendor pricing strategies.
+
+The main goals are to identify patterns in average prices, determine if vendors show coordinated price trends, and uncover how sale prices evolve. The remainder of this paper is structured as follows. @sec-data provides an overview of data sources and preparation; @sec-measurement outlines measurement processes; @sec-model explains our modeling choices; and @sec-results presents findings. The Discussion will cover insights, limitations, and next steps.
+
+
+
+# Data {#sec-data}
+
+## Overview
+
+The study uses @RSQLite for initial data preparation and @citeR for visualization. The dataset includes time-series price data, cleaned through SQL to focus on non-null prices, vendors, and product identifiers.
+
+
+## Measurement
+	
+Price data were collected from different vendors through web scraping. SQL scripts ensured data consistency by standardizing price fields and transforming missing or erroneous entries.
+
+## Outcome variables
+
+The primary outcome variable is the price of products over time, enabling comparisons across vendors.
+
+{r}
+#| label: fig-bread-price
+#| fig-cap: "Average Price of Bread by Vendor"
+#| echo: false
+
+# Define the correct column names
+column_names <- c("nowtime", "vendor", "product_id", "product_name", "extra_column", 
+                  "current_price", "old_price", "price_per_unit", "other", "sale_status")
+
+# Load the data with specified column names
+cleaned_data <- read_csv("../data/02-analysis_data/cleaned_hammer_data.csv", col_names = column_names)
+
+# Verify the data
+head(cleaned_data)
+
+
+# Visualize average price of bread across vendors
+cleaned_data %>%
+  filter(str_detect(product_name, "bread")) %>%
+  group_by(vendor) %>%
+  summarize(avg_price = mean(current_price, na.rm = TRUE)) %>%
+  ggplot(aes(x = vendor, y = avg_price, fill = vendor)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Average Price of Bread by Vendor",
+    x = "Vendor",
+    y = "Average Price (CAD)"
+  ) +
+  theme_minimal()
+
+The bar chart in @fig-bread-price shows average bread prices per vendor. This preliminary analysis indicates significant price variation, suggesting differences in vendor pricing strategies.
+
+
+## Predictor variables
+
+The predictor variables include product brand, vendor, and price dynamics across time points. These help us identify trends in vendor-specific pricing and sale events.
+
+# Results
+
+Our model reveals significant differences in pricing strategies across vendors. Results in @tbl-modelresults suggest that vendor and brand effects are both statistically significant predictors of price.
+
+
+# Discussion
+
+## Correlation vs. Causation {#sec-correlation-causation}
+
+While we observe correlations in price patterns across vendors, these do not imply causation. Factors such as regional pricing strategies, supply chain costs, and vendor-specific policies may explain observed price trends.
+
+## Missing Data
+
+The dataset contains missing data due to web scraping limitations, especially for sale prices. This may introduce bias if certain vendors or products are underrepresented in the data.
+
+## Sources of Bias
+
+Bias could arise from differences in vendor reporting or scraping errors. For example, variations in sale timing across vendors may obscure true pricing dynamics.
+
+## Weaknesses and next steps
+
+Future research should expand to more regions to capture geographical price variation. Additionally, increasing the frequency of data collection would improve accuracy in sale duration analysis.
+
+\newpage
+
+
+# References
+
+ChatGPT said:
+
+ChatGPT
+To extend the analysis and explore price trends over time for bread products, we can add a section to the Quarto document that focuses on the monthly average price trends for bread. This will allow us to investigate whether bread prices vary across time and among vendors.
+
+Here's how you can incorporate the time series analysis into the document:
+
+## Temporal Analysis of Bread Prices
+
+To gain insights into price trends over time, we examined the monthly average prices of bread products across various vendors. This analysis helps reveal any seasonal trends or price adjustments by specific vendors over the months.
+
+```{r}
+#| label: fig-bread-price-trends
+#| fig-cap: "Monthly Average Price of Bread by Vendor"
+#| echo: false
+
+library(lubridate)
+
+# Process bread data for time series analysis
+bread_data <- cleaned_data %>%
+  filter(str_detect(product_name, "bread", ignore_case = TRUE)) %>%
+  mutate(nowtime = ymd_hms(nowtime)) %>%
+  mutate(month = floor_date(nowtime, "month"))
+
+# Calculate the average price per vendor per month
+monthly_bread_prices <- bread_data %>%
+  group_by(vendor, month) %>%
+  summarize(avg_price = mean(current_price, na.rm = TRUE)) %>%
+  ungroup()
+
+# Plot monthly average price trends for bread by vendor
+ggplot(monthly_bread_prices, aes(x = month, y = avg_price, color = vendor)) +
+  geom_line(size = 1.2) +
+  labs(
+    title = "Monthly Average Price of Bread by Vendor",
+    x = "Month",
+    y = "Average Price (CAD)",
+    color = "Vendor"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+In @fig-bread-price-trends, we observe the average monthly prices of bread products across vendors. The trendlines show whether vendors adjust their prices simultaneously or exhibit unique seasonal pricing patterns. This analysis highlights any price increases, decreases, or general stability in bread prices over time, offering insights into potential market dynamics among vendors.
+
+
+---
+
+This section:
+1. **Introduces the purpose** of analyzing bread prices over time.
+2. **Includes a time series plot** to visually examine monthly trends in bread prices by vendor.
+3. **Highlights observations** about vendor-specific or seasonal price trends, which can be discussed further in the Discussion section.
+
+This addition provides a deeper exploration of price dynamics and enables meaningful discussion regarding potential pricing strategies or market behaviors among the vendors.
+
+
+
+
+
+You said:
+> library(lubridate)
+> 
+> # Process bread data for time series analysis
+> bread_data <- cleaned_data %>%
++   filter(str_detect(product_name, "bread", ignore_case = TRUE)) %>%
++   mutate(nowtime = ymd_hms(nowtime)) %>%
++   mutate(month = floor_date(nowtime, "month"))
+Error in filter():
+ℹ In argument: str_detect(product_name, "bread", ignore_case = TRUE).
+Caused by error in str_detect():
+! unused argument (ignore_case = TRUE)
+Backtrace:
+  1. ... %>% mutate(month = floor_date(nowtime, "month"))
+  5. dplyr:::filter.data.frame(., str_detect(product_name, "bread", ignore_case = TRUE))
+  6. dplyr:::filter_rows(.data, dots, by)
+  7. dplyr:::filter_eval(...)
+  9. mask$eval_all_filter(dots, env_filter)
+ 10. dplyr (local) eval()
+ChatGPT said:
+
+ChatGPT
+The error you're seeing is because the str_detect() function from the stringr package doesn't recognize the ignore_case argument in older versions. To make it case-insensitive, you can instead use str_to_lower() on the product_name column and search for "bread" in lowercase. Here's the updated code:
+
+library(lubridate)
+
+# Process bread data for time series analysis
+bread_data <- cleaned_data %>%
+  filter(str_detect(str_to_lower(product_name), "bread")) %>%
+  mutate(nowtime = ymd_hms(nowtime)) %>%
+  mutate(month = floor_date(nowtime, "month"))
+
+# Check the first few rows to confirm the changes
+head(bread_data)
+In this version:
+
+str_to_lower(product_name) converts product_name to lowercase, ensuring the match with "bread" is case-insensitive.
+This should resolve the error and allow you to proceed with the time series analysis.
