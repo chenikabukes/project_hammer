@@ -36,7 +36,6 @@ This study investigates grocery prices from various vendors, focusing on the fre
 The main goals are to identify patterns in average prices, determine if vendors show coordinated price trends, and uncover how sale prices evolve. The remainder of this paper is structured as follows. @sec-data provides an overview of data sources and preparation; @sec-measurement outlines measurement processes; and @sec-results presents findings. The Discussion will cover insights, limitations, and next steps.
 
 
-
 # Data {#sec-data}
 
 ## Overview
