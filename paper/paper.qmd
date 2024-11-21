@@ -31,7 +31,7 @@ library(rstanarm)
 
 # Introduction
 
-This study investigates grocery prices from various vendors, focusing on the frequency of price changes, comparisons across brands, and temporal trends. We analyze price dynamics using time-series data to answer questions about vendor pricing strategies.
+This study investigates grocery prices from various vendors, focusing on the frequency of price changes, comparisons across brands, and temporal trends. We analyze price dynamics using time-series data to answer questions about vendor pricing strategies.The study uses @citeR for visualization and @RSQLite for initial data preparation. 
 
 The main goals are to identify patterns in average prices, determine if vendors show coordinated price trends, and uncover how sale prices evolve. The remainder of this paper is structured as follows. @sec-data provides an overview of data sources and preparation; @sec-measurement outlines measurement processes; and @sec-results presents findings. The Discussion will cover insights, limitations, and next steps.
 
@@ -41,7 +41,7 @@ The main goals are to identify patterns in average prices, determine if vendors 
 
 ## Overview
 
-The study uses @RSQLite for initial data preparation and @citeR for visualization. The dataset includes time-series price data, cleaned through SQL to focus on non-null prices, vendors, and product identifiers.
+The raw-data was provided by @Grocery and downloaded at SQLite. The dataset includes time-series price data, cleaned through SQL to focus on non-null prices, vendors, and product identifiers.
 
 
 ## Measurement {#sec-measurement}
@@ -60,7 +60,7 @@ The primary outcome variable is the price of products over time, enabling compar
 #| error: false
 
 # Define the correct column names
-column_names <- c("nowtime", "vendor", "product_id", "product_name", "extra_column", 
+column_names <- c("nowtime", "Vendor", "product_id", "product_name", "extra_column", 
                   "current_price", "old_price", "price_per_unit", "other", "sale_status")
 
 # Load the data with specified column names
@@ -70,18 +70,22 @@ cleaned_data <- read_csv("../data/02-analysis_data/cleaned_hammer_data.csv", col
 # Visualize average price of bread across vendors
 cleaned_data %>%
   filter(str_detect(product_name, "bread")) %>%
-  group_by(vendor) %>%
+  group_by(Vendor) %>%
   summarize(avg_price = mean(current_price, na.rm = TRUE)) %>%
-  ggplot(aes(x = vendor, y = avg_price, fill = vendor)) +
+  ggplot(aes(x = Vendor, y = avg_price, fill = Vendor)) +
   geom_bar(stat = "identity") +
   labs(
     title = "Average Price of Bread by Vendor",
     x = "Vendor",
     y = "Average Price (CAD)"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Adjust angle and alignment
+    plot.title = element_text(hjust = 0.5)             # Center the title
+  )
 ```
-The bar chart in @fig-bread-price shows average bread prices per vendor. This preliminary analysis indicates significant price variation, suggesting differences in vendor pricing strategies.
+The bar chart in @fig-bread-price shows average bread prices per Vendor. This preliminary analysis indicates significant price variation, suggesting differences in vendor pricing strategies.
 
 ## Temporal Analysis of Bread Prices
 
@@ -104,12 +108,12 @@ bread_data <- cleaned_data %>%
 
 # Calculate the average price per vendor per month
 monthly_bread_prices <- bread_data %>%
-  group_by(vendor, month) %>%
+  group_by(Vendor, month) %>%
   summarize(avg_price = mean(current_price, na.rm = TRUE)) %>%
   ungroup()
 
 # Plot monthly average price trends for bread by vendor
-ggplot(monthly_bread_prices, aes(x = month, y = avg_price, color = vendor)) +
+ggplot(monthly_bread_prices, aes(x = month, y = avg_price, color = Vendor)) +
   geom_line(size = 1.2) +
   labs(
     title = "Monthly Average Price of Bread by Vendor",
@@ -130,7 +134,7 @@ The predictor variables include product brand, vendor, and price dynamics across
 
 # Results {#sec-results}
 
-Our model reveals significant differences in pricing strategies across vendors. Results in @tbl-modelresults suggest that vendor and brand effects are both statistically significant predictors of price. Additionally, analysis of monthly average bread prices, as shown in @fig-bread-price-trends, illustrates distinct pricing strategies across vendors, with notable variations in price stability, seasonal adjustments, and overall price levels.
+Our model reveals significant differences in pricing strategies across vendors. Results in @fig-bread-price suggest that vendor and brand effects are both statistically significant predictors of price. Additionally, analysis of monthly average bread prices, as shown in @fig-bread-price-trends, illustrates distinct pricing strategies across vendors, with notable variations in price stability, seasonal adjustments, and overall price levels.
 
 # Discussion
 
@@ -138,10 +142,10 @@ Our model reveals significant differences in pricing strategies across vendors. 
 
 While our analysis highlights correlations in price patterns across vendors, these do not necessarily imply causation. The observed price increases from March to May, for instance, are consistent across most vendors, suggesting potential market-driven factors such as increased production costs or seasonal demand. However, it remains unclear if these changes were directly influenced by shared supply chain costs, vendor-specific pricing strategies, or other external economic pressures. Furthermore, the higher price levels observed at vendors like Voila and Galleria might correlate with a premium pricing strategy, but this does not imply that their prices caused other vendors, such as No Frills and T&T, to adopt lower prices. These patterns may simply reflect each vendor’s strategic positioning within the market.
 
-## Missing Data
+## Missing Data {#sec-missing-data}
 The dataset contains some missing data due to web scraping limitations, particularly around sale prices and certain timestamps. This may result in incomplete price trends for specific vendors or products, potentially impacting the accuracy of our monthly average price calculations. For instance, if data were missing for sale prices during high-demand periods, the average prices could be artificially inflated, obscuring the true pricing strategy of a vendor. Ensuring more consistent data collection across all vendors and time periods would improve the reliability of our findings and reduce any skew caused by missing values.
 
-## Sources of Bias
+## Sources of Bias {#sec-source-of-bias}
 
 Bias could arise from differences in vendor reporting or inconsistencies in data scraping. For example, vendors may display prices differently across regions, which could influence the scraped data if not properly accounted for. Additionally, vendors may implement promotional pricing at different times, which could lead to apparent discrepancies in the data that do not accurately reflect real differences in price trends. For example, Walmart and Save-On-Foods show price fluctuations likely due to promotional cycles, while No Frills maintains a more stable price trend. These differences in pricing practices may introduce bias when comparing vendors. Furthermore, brand-specific promotions may not be fully captured, which could impact the average prices displayed in our results.
 

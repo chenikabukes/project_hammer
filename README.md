@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository provides a comprehensive analysis of grocery price dynamics across several vendors, focusing on average prices, sale trends, and potential pricing strategies. The analysis aims to uncover insights into vendor-specific pricing behaviors and explore how these behaviors may vary over time and across different products. The dataset used includes time-series data on grocery prices gathered from multiple vendors between February and October 2024.
+This repository provides an analysis of grocery price dynamics across several vendors, focusing on average prices, sale trends, and potential pricing strategies. The analysis aims to uncover insights into vendor-specific pricing behaviors and explore how these behaviors may vary over time and across different products. The dataset used includes time-series data on grocery prices gathered from multiple vendors between February and October 2024.
 
 
 ## File Structure
