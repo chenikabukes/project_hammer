@@ -30,7 +30,7 @@ library(here)
 
 # Introduction
 
-This study investigates grocery prices from various vendors, focusing on the frequency of price changes, comparisons across brands, and temporal trends. We analyze price dynamics using time-series data to answer questions about vendor pricing strategies.The study uses R (@citeR) for visualization with package with the aid of the following packages: tidyverse (@tidyverse), here (@here), lubridate (@lubridate) and RSQLite (@RSQLite) for initial data preparation. 
+This study investigates grocery prices from various vendors, focusing on the frequency of price changes, comparisons across brands, and temporal trends. We analyze price dynamics using time-series data to answer questions about vendor pricing strategies.
 
 The main goals are to identify patterns in average prices, determine if vendors show coordinated price trends, and uncover how sale prices evolve. The remainder of this paper is structured as follows. @sec-data provides an overview of data sources and preparation; @sec-measurement outlines measurement processes; and @sec-results presents findings. The Discussion will cover insights, limitations, and next steps.
 
@@ -39,7 +39,7 @@ The main goals are to identify patterns in average prices, determine if vendors 
 
 ## Overview
 
-The raw-data was downloaded from Project Hammer (@Grocery) and downloaded as SQLite. The dataset includes time-series price data, cleaned through SQL to focus on non-null prices, vendors, and product identifiers.
+The raw-data was downloaded from Project Hammer (@Grocery) and downloaded as SQLite. The study uses R (@citeR) for visualization with package with the aid of the following packages: tidyverse (@tidyverse), here (@here), lubridate (@lubridate) and RSQLite (@RSQLite) for initial data preparation. The dataset includes time-series price data, cleaned through SQL to focus on non-null prices, vendors, and product identifiers.
 
 
 ## Measurement {#sec-measurement}
